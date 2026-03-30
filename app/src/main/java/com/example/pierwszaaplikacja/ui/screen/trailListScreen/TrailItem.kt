@@ -1,6 +1,5 @@
 package com.example.pierwszaaplikacja.ui.screen.trailListScreen
 
-import android.service.autofill.OnClickAction
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -17,19 +16,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.pierwszaaplikacja.model.Trail
-import com.example.pierwszaaplikacja.ui.screen.trailDetailsScreen.TrailShow
 
 @Composable
 fun TrailItem(
     trail: Trail,
     modifier: Modifier = Modifier,
-    onClickAction: (TrailShow) -> Unit
+    onClickAction: (Int) -> Unit
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
             .padding(8.dp)
-            .clickable(true) { onClickAction(TrailShow(trail.id)) }
+            .clickable { onClickAction(trail.id) }
     ) {
         Box(
             modifier = Modifier

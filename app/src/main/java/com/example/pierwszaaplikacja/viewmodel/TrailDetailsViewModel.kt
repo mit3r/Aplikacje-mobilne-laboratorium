@@ -3,10 +3,8 @@ package com.example.pierwszaaplikacja.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pierwszaaplikacja.model.Trail
-import com.example.pierwszaaplikacja.model.TrailType
 import com.example.pierwszaaplikacja.network.RetrofitClient
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
@@ -16,6 +14,7 @@ class TrailDetailsViewModel : ViewModel() {
 
     fun fetchTrail(trailId: Int) {
         viewModelScope.launch {
+            _trail.value = null
             try {
                 val item = RetrofitClient.apiService.getTrail(trailId)
                 _trail.value = item
