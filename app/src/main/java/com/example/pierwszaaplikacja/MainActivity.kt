@@ -1,5 +1,6 @@
 package com.example.pierwszaaplikacja
 
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -48,9 +49,11 @@ fun Main(modifier: Modifier = Modifier) {
     val navController = rememberNavController()
     val configuration = LocalConfiguration.current
     val isTabletLayout = configuration.smallestScreenWidthDp >= 600
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val useSingleScreenMode = (isTabletLayout && isLandscape) || (!isTabletLayout && isLandscape)
     var selectedTrailId by rememberSaveable { mutableStateOf<Int?>(null) }
 
-    if (isTabletLayout) {
+    if (useSingleScreenMode) {
         Row(modifier = modifier.fillMaxSize()) {
             TrailScreen(
                 modifier = Modifier
