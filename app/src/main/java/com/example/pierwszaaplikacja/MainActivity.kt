@@ -1,6 +1,5 @@
 package com.example.pierwszaaplikacja
 
-import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -16,8 +15,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.booleanResource
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -27,6 +27,7 @@ import com.example.pierwszaaplikacja.ui.screen.trailDetailsScreen.TrailShow
 import com.example.pierwszaaplikacja.ui.screen.trailListScreen.TrailList
 import com.example.pierwszaaplikacja.ui.screen.trailListScreen.TrailScreen
 import com.example.pierwszaaplikacja.ui.theme.PierwszaAplikacjaTheme
+import com.example.pierwszaaplikacja.viewmodel.TrailDetailsViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,9 +35,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PierwszaAplikacjaTheme {
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                ) { innerPadding ->
+                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Main(modifier = Modifier.padding(innerPadding))
                 }
             }
@@ -46,14 +45,11 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun Main(modifier: Modifier = Modifier) {
-    val navController = rememberNavController()
-    val configuration = LocalConfiguration.current
-    val isTabletLayout = configuration.smallestScreenWidthDp >= 600
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-    val useSingleScreenMode = (isTabletLayout && isLandscape) || (!isTabletLayout && isLandscape)
+    val useSplitPaneMode = booleanResource(id = R.bool.use_split_pane_mode)
+    val trailDetailsViewModel: TrailDetailsViewModel = viewModel()
     var selectedTrailId by rememberSaveable { mutableStateOf<Int?>(null) }
 
-    if (useSingleScreenMode) {
+    if (useSplitPaneMode) {
         Row(modifier = modifier.fillMaxSize()) {
             TrailScreen(
                 modifier = Modifier
@@ -61,11 +57,13 @@ fun Main(modifier: Modifier = Modifier) {
                     .fillMaxHeight(),
                 onTrailClick = { selectedTrailId = it }
             )
+
             if (selectedTrailId != null) {
                 TrailDetailsScreen(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight(),
+                    viewModel = trailDetailsViewModel,
                     trailId = selectedTrailId,
                     onComeBack = { selectedTrailId = null },
                     showBackButton = false
@@ -79,18 +77,27 @@ fun Main(modifier: Modifier = Modifier) {
             }
         }
     } else {
-        NavHost(navController = navController, startDestination = TrailList) {
+        val navController = rememberNavController()
+
+        NavHost(
+            navController = navController,
+            startDestination = TrailList,
+            modifier = modifier.fillMaxSize()
+        ) {
             composable<TrailList> {
-                TrailScreen(modifier = modifier) {
+                TrailScreen(modifier = Modifier.fillMaxSize()) {
                     navController.navigate(TrailShow(it))
                 }
             }
-            composable<TrailShow> { backStackEntry ->
-                val entry: TrailShow = backStackEntry.toRoute()
+            composable<TrailShow> { entry ->
+                val trailShow: TrailShow = entry.toRoute()
                 TrailDetailsScreen(
-                    modifier = modifier,
-                    trailId = entry.id,
-                    onComeBack = { navController.popBackStack() },
+                    modifier = Modifier.fillMaxSize(),
+                    viewModel = trailDetailsViewModel,
+                    trailId = trailShow.id,
+                    onComeBack = {
+                        navController.popBackStack()
+                    },
                     showBackButton = true
                 )
             }

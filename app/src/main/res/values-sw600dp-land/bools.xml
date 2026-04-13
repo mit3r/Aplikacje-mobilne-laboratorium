@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tablet landscape: split mode (list + details on one screen). -->
+    <bool name="use_split_pane_mode">true</bool>
+</resources>
+
