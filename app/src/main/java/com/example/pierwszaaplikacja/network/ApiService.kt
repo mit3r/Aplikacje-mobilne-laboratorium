@@ -7,6 +7,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Path
+import kotlin.getValue
 
 interface ApiService {
     @GET("trails")
@@ -17,7 +18,7 @@ interface ApiService {
 }
 
 object RetrofitClient {
-    private const val BASE_URL = "https://2g4f.web.svpj.pl/"
+    const val BASE_URL = "https://2g4f.web.svpj.pl/"
 
     private val retrofit: Retrofit by lazy {
         val logging = HttpLoggingInterceptor().apply {
