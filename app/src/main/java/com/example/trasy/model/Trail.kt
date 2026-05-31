@@ -10,6 +10,7 @@ import java.lang.reflect.Type
 enum class TrailType {
     RUNNING,
     CYCLING,
+    HIKING,
 }
 
 /**

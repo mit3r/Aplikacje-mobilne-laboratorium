@@ -5,30 +5,15 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.rememberDrawerState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DirectionsRun
+import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.booleanResource
 import androidx.compose.ui.res.painterResource
@@ -66,9 +51,11 @@ fun Main() {
     val useSplitPaneMode = booleanResource(id = R.bool.use_split_pane_mode)
     val trailDetailsViewModel: TrailDetailsViewModel = viewModel()
     var selectedTrailId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var currentSectionIndex by rememberSaveable { mutableIntStateOf(0) }
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val navController = rememberNavController()
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -92,11 +79,30 @@ fun Main() {
                         style = MaterialTheme.typography.titleLarge
                     )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
-                    NavigationDrawerItem(
-                        label = { Text("Trasy") },
-                        selected = true,
-                        onClick = { scope.launch { drawerState.close() } }
+                    
+                    val sections = listOf(
+                        "Wszystkie" to Icons.AutoMirrored.Filled.List,
+                        "Bieganie" to Icons.AutoMirrored.Filled.DirectionsRun,
+                        "Rower" to Icons.Default.PedalBike,
+                        "Hiking" to Icons.AutoMirrored.Filled.DirectionsWalk
                     )
+
+                    sections.forEachIndexed { index, (label, icon) ->
+                        NavigationDrawerItem(
+                            label = { Text(label) },
+                            icon = { Icon(icon, contentDescription = null) },
+                            selected = currentSectionIndex == index,
+                            onClick = { 
+                                currentSectionIndex = index
+                                if (!useSplitPaneMode) {
+                                    navController.navigate(TrailList) {
+                                        popUpTo(TrailList) { inclusive = true }
+                                    }
+                                }
+                                scope.launch { drawerState.close() } 
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -109,8 +115,9 @@ fun Main() {
                             .weight(1f)
                             .fillMaxHeight(),
                         selectedTrailId = selectedTrailId,
-                        onTrailClick = { selectedTrailId = it },
-                        onMenuClick = { scope.launch { drawerState.open() } }
+                        selectedCategoryIndex = currentSectionIndex,
+                        onMenuClick = { scope.launch { drawerState.open() } },
+                        onTrailClick = { selectedTrailId = it }
                     )
 
                     if (selectedTrailId != null) {
@@ -121,19 +128,14 @@ fun Main() {
                             viewModel = trailDetailsViewModel,
                             trailId = selectedTrailId,
                             onComeBack = { selectedTrailId = null },
-                            showBackButton = false
+                            showBackButton = false,
+                            onTrailChange = { selectedTrailId = it }
                         )
                     } else {
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                        )
+                        Box(modifier = Modifier.weight(1f).fillMaxHeight())
                     }
                 }
             } else {
-                val navController = rememberNavController()
-
                 NavHost(
                     navController = navController,
                     startDestination = TrailList,
@@ -142,10 +144,12 @@ fun Main() {
                     composable<TrailList> {
                         TrailScreen(
                             modifier = Modifier.fillMaxSize(),
-                            onMenuClick = { scope.launch { drawerState.open() } }
-                        ) {
-                            navController.navigate(TrailShow(it))
-                        }
+                            selectedCategoryIndex = currentSectionIndex,
+                            onMenuClick = { scope.launch { drawerState.open() } },
+                            onTrailClick = { trailId ->
+                                navController.navigate(TrailShow(trailId))
+                            }
+                        )
                     }
                     composable<TrailShow> { entry ->
                         val trailShow: TrailShow = entry.toRoute()

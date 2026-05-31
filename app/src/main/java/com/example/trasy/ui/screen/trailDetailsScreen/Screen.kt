@@ -35,7 +35,8 @@ fun TrailDetailsScreen(
     viewModel: TrailDetailsViewModel = viewModel(),
     trailId: Int?,
     onComeBack: () -> Unit,
-    showBackButton: Boolean = true
+    showBackButton: Boolean = true,
+    onTrailChange: (Int) -> Unit = {}
 ) {
     if (trailId == null) {
         Box(
@@ -69,10 +70,12 @@ fun TrailDetailsScreen(
         }
     }
 
-    // Synchronizacja aktualnego ID trasy z pagerem dla historii i stopera
+    // Synchronizacja aktualnego ID trasy z pagerem dla historii i stopera oraz powiadomienie o zmianie
     LaunchedEffect(pagerState.currentPage, trails) {
         if (trails.isNotEmpty()) {
-            viewModel.updateCurrentTrailId(trails[pagerState.currentPage].id)
+            val currentTrailId = trails[pagerState.currentPage].id
+            viewModel.updateCurrentTrailId(currentTrailId)
+            onTrailChange(currentTrailId)
         }
     }
 

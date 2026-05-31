@@ -2,29 +2,25 @@ package com.example.trasy.ui.screen.trailListScreen
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.trasy.model.Trail
 import com.example.trasy.model.TrailType
-import com.example.trasy.ui.screen.trailListScreen.components.CategoryHeader
 import com.example.trasy.ui.screen.trailListScreen.components.MainInfoCard
 import com.example.trasy.ui.screen.trailListScreen.components.TrailGridItem
 import com.example.trasy.viewmodel.TrailListViewModel
-import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -36,6 +32,7 @@ fun TrailScreen(
     modifier: Modifier = Modifier,
     viewModel: TrailListViewModel = viewModel(),
     selectedTrailId: Int? = null,
+    selectedCategoryIndex: Int = 0,
     onMenuClick: () -> Unit,
     onTrailClick: (Int) -> Unit
 ) {
@@ -44,18 +41,54 @@ fun TrailScreen(
     }
 
     val trails by viewModel.trails.collectAsState()
-    val scope = rememberCoroutineScope()
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    var isSearchActive by remember { mutableStateOf(false) }
+    val gridState = rememberLazyGridState()
 
-    // Konfiguracja zakładek i pagera
-    val tabs = listOf("Wszystkie", "🏃 Bieganie", "🚴 Rower")
-    val pagerState = rememberPagerState(pageCount = { tabs.size })
+    // Resetowanie pozycji listy przy zmianie kategorii
+    LaunchedEffect(selectedCategoryIndex) {
+        if (trails.isNotEmpty()) {
+            gridState.animateScrollToItem(0)
+        }
+    }
+
+    // Filtrowanie: Wyszukiwanie ignoruje kategorie (szuka we wszystkich).
+    // Jeśli wyszukiwanie jest puste, filtrujemy po kategorii z szuflady.
+    val filteredTrails = remember(trails, selectedCategoryIndex, searchQuery) {
+        if (searchQuery.isNotBlank()) {
+            trails // ViewModel już przefiltrował globalnie po tekście
+        } else {
+            when (selectedCategoryIndex) {
+                1 -> trails.filter { it.type == TrailType.RUNNING }
+                2 -> trails.filter { it.type == TrailType.CYCLING }
+                3 -> trails.filter { it.type == TrailType.HIKING }
+                else -> trails
+            }
+        }
+    }
 
     Scaffold(
         modifier = modifier,
         topBar = {
-            Column {
-                TopAppBar(
-                    title = {
+            TopAppBar(
+                title = {
+                    if (isSearchActive) {
+                        TextField(
+                            value = searchQuery,
+                            onValueChange = { viewModel.onSearchQueryChange(it) },
+                            placeholder = { Text("Szukaj tras...", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                disabledContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                            ),
+                            textStyle = MaterialTheme.typography.bodyLarge
+                        )
+                    } else {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Surface(
                                 modifier = Modifier.size(32.dp),
@@ -71,83 +104,54 @@ fun TrailScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(stringResource(id = com.example.trasy.R.string.app_name))
                         }
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onMenuClick) {
-                            Icon(
-                                Icons.Default.Menu,
-                                contentDescription = "Menu"
-                            )
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = onMenuClick) {
+                        Icon(Icons.Default.Menu, contentDescription = "Menu")
+                    }
+                },
+                actions = {
+                    if (isSearchActive) {
+                        IconButton(onClick = { 
+                            isSearchActive = false
+                            viewModel.onSearchQueryChange("")
+                        }) {
+                            Icon(Icons.Default.Close, contentDescription = "Zamknij wyszukiwanie")
+                        }
+                    } else {
+                        IconButton(onClick = { isSearchActive = true }) {
+                            Icon(Icons.Default.Search, contentDescription = "Szukaj")
                         }
                     }
-                )
-                // TabRow zintegrowany z pagerState
-                PrimaryTabRow(
-                    selectedTabIndex = pagerState.currentPage,
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.primary
-                ) {
-                    tabs.forEachIndexed { index, title ->
-                        Tab(
-                            selected = pagerState.currentPage == index,
-                            onClick = {
-                                scope.launch {
-                                    pagerState.animateScrollToPage(index)
-                                }
-                            },
-                            text = {
-                                Text(
-                                    text = title,
-                                    style = MaterialTheme.typography.titleSmall
-                                )
-                            }
-                        )
-                    }
                 }
-            }
-        }
-    ) { innerPadding ->
-        // HorizontalPager umożliwia gest przeciągnięcia (swipe)
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            verticalAlignment = Alignment.Top
-        ) { pageIndex ->
-            // Filtrowanie listy w zależności od aktywnej karty
-            val filteredTrails = when (pageIndex) {
-                1 -> trails.filter { it.type == TrailType.RUNNING }
-                2 -> trails.filter { it.type == TrailType.CYCLING }
-                else -> trails
-            }
-
-            TrailGridContent(
-                trails = filteredTrails,
-                selectedTrailId = selectedTrailId,
-                showMainCard = pageIndex == 0,
-                activeType = when (pageIndex) {
-                    1 -> TrailType.RUNNING
-                    2 -> TrailType.CYCLING
-                    else -> null
-                },
-                onTrailClick = onTrailClick
             )
         }
+    ) { innerPadding ->
+        TrailGridContent(
+            modifier = Modifier.padding(innerPadding),
+            gridState = gridState,
+            trails = filteredTrails,
+            selectedTrailId = selectedTrailId,
+            showMainCard = selectedCategoryIndex == 0 && searchQuery.isBlank(),
+            onTrailClick = onTrailClick
+        )
     }
 }
 
 @Composable
 fun TrailGridContent(
+    modifier: Modifier = Modifier,
+    gridState: LazyGridState,
     trails: List<Trail>,
     selectedTrailId: Int? = null,
     showMainCard: Boolean,
-    activeType: TrailType?,
     onTrailClick: (Int) -> Unit
 ) {
     LazyVerticalGrid(
+        state = gridState,
         columns = GridCells.Fixed(2),
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -158,32 +162,12 @@ fun TrailGridContent(
             }
         }
 
-        // Sekcja: Bieganie (jeśli nie filtrujemy tylko pod rower)
-        val running = trails.filter { it.type == TrailType.RUNNING }
-        if (running.isNotEmpty() && (activeType == null || activeType == TrailType.RUNNING)) {
-            item(span = { GridItemSpan(2) }) {
-                CategoryHeader("🏃 Bieganie", "Najlepsze ścieżki w okolicy")
-            }
-            items(running, key = { it.id }) { trail ->
-                TrailGridItem(
-                    trail = trail,
-                    isSelected = trail.id == selectedTrailId,
-                    onClick = { onTrailClick(trail.id) })
-            }
-        }
-
-        // Sekcja: Rower (jeśli nie filtrujemy tylko pod bieganie)
-        val cycling = trails.filter { it.type == TrailType.CYCLING }
-        if (cycling.isNotEmpty() && (activeType == null || activeType == TrailType.CYCLING)) {
-            item(span = { GridItemSpan(2) }) {
-                CategoryHeader("🚴 Rower", "Trasy rowerowe i MTB")
-            }
-            items(cycling, key = { it.id }) { trail ->
-                TrailGridItem(
-                    trail = trail,
-                    isSelected = trail.id == selectedTrailId,
-                    onClick = { onTrailClick(trail.id) })
-            }
+        items(trails, key = { it.id }) { trail ->
+            TrailGridItem(
+                trail = trail,
+                isSelected = trail.id == selectedTrailId,
+                onClick = { onTrailClick(trail.id) }
+            )
         }
     }
 }
