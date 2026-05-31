@@ -1,5 +1,6 @@
 package com.example.trasy.ui.screen.trailListScreen
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
@@ -72,37 +73,51 @@ fun TrailScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    if (isSearchActive) {
-                        TextField(
-                            value = searchQuery,
-                            onValueChange = { viewModel.onSearchQueryChange(it) },
-                            placeholder = { Text("Szukaj tras...", color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                disabledContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent,
-                            ),
-                            textStyle = MaterialTheme.typography.bodyLarge
-                        )
-                    } else {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Surface(
-                                modifier = Modifier.size(32.dp),
-                                shape = MaterialTheme.shapes.small,
-                                color = MaterialTheme.colorScheme.surfaceVariant
-                            ) {
-                                Image(
-                                    painter = painterResource(id = com.example.trasy.R.drawable.ic_launcher_foreground),
-                                    contentDescription = null,
-                                    modifier = Modifier.padding(4.dp)
-                                )
+                    AnimatedContent(
+                        targetState = isSearchActive,
+                        transitionSpec = {
+                            fadeIn() + slideInHorizontally { it / 2 } togetherWith
+                                    fadeOut() + slideOutHorizontally { -it / 2 }
+                        },
+                        label = "SearchAnimation"
+                    ) { active ->
+                        if (active) {
+                            TextField(
+                                value = searchQuery,
+                                onValueChange = { viewModel.onSearchQueryChange(it) },
+                                placeholder = {
+                                    Text(
+                                        "Szukaj tras...",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                colors = TextFieldDefaults.colors(
+                                    focusedContainerColor = Color.Transparent,
+                                    unfocusedContainerColor = Color.Transparent,
+                                    disabledContainerColor = Color.Transparent,
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent,
+                                ),
+                                textStyle = MaterialTheme.typography.bodyLarge
+                            )
+                        } else {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Surface(
+                                    modifier = Modifier.size(32.dp),
+                                    shape = MaterialTheme.shapes.small,
+                                    color = MaterialTheme.colorScheme.surfaceVariant
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = com.example.trasy.R.drawable.ic_launcher_foreground),
+                                        contentDescription = null,
+                                        modifier = Modifier.padding(4.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(stringResource(id = com.example.trasy.R.string.app_name))
                             }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(stringResource(id = com.example.trasy.R.string.app_name))
                         }
                     }
                 },
@@ -112,30 +127,48 @@ fun TrailScreen(
                     }
                 },
                 actions = {
-                    if (isSearchActive) {
-                        IconButton(onClick = { 
+                    IconButton(onClick = {
+                        if (isSearchActive) {
                             isSearchActive = false
                             viewModel.onSearchQueryChange("")
-                        }) {
-                            Icon(Icons.Default.Close, contentDescription = "Zamknij wyszukiwanie")
+                        } else {
+                            isSearchActive = true
                         }
-                    } else {
-                        IconButton(onClick = { isSearchActive = true }) {
-                            Icon(Icons.Default.Search, contentDescription = "Szukaj")
+                    }) {
+                        AnimatedContent(
+                            targetState = isSearchActive,
+                            transitionSpec = {
+                                fadeIn() + scaleIn() togetherWith fadeOut() + scaleOut()
+                            },
+                            label = "SearchIconAnimation"
+                        ) { active ->
+                            if (active) {
+                                Icon(Icons.Default.Close, contentDescription = "Zamknij wyszukiwanie")
+                            } else {
+                                Icon(Icons.Default.Search, contentDescription = "Szukaj")
+                            }
                         }
                     }
                 }
             )
         }
     ) { innerPadding ->
-        TrailGridContent(
+        AnimatedContent(
+            targetState = selectedCategoryIndex to searchQuery.isBlank(),
+            transitionSpec = {
+                fadeIn() togetherWith fadeOut()
+            },
             modifier = Modifier.padding(innerPadding),
-            gridState = gridState,
-            trails = filteredTrails,
-            selectedTrailId = selectedTrailId,
-            showMainCard = selectedCategoryIndex == 0 && searchQuery.isBlank(),
-            onTrailClick = onTrailClick
-        )
+            label = "CategoryChangeAnimation"
+        ) { (categoryIndex, isSearchBlank) ->
+            TrailGridContent(
+                gridState = gridState,
+                trails = filteredTrails,
+                selectedTrailId = selectedTrailId,
+                showMainCard = categoryIndex == 0 && isSearchBlank,
+                onTrailClick = onTrailClick
+            )
+        }
     }
 }
 
@@ -164,6 +197,7 @@ fun TrailGridContent(
 
         items(trails, key = { it.id }) { trail ->
             TrailGridItem(
+                modifier = Modifier.animateItem(),
                 trail = trail,
                 isSelected = trail.id == selectedTrailId,
                 onClick = { onTrailClick(trail.id) }

@@ -14,11 +14,12 @@ import com.example.trasy.model.Trail
 @Composable
 fun TrailGridItem(
     trail: Trail,
+    modifier: Modifier = Modifier,
     isSelected: Boolean = false,
     onClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() },
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),

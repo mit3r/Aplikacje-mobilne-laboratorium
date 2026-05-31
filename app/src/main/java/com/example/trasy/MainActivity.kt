@@ -25,6 +25,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.example.trasy.ui.screen.SplashScreen
 import com.example.trasy.ui.screen.trailDetailsScreen.TrailDetailsScreen
 import com.example.trasy.ui.screen.trailDetailsScreen.TrailShow
 import com.example.trasy.ui.screen.trailListScreen.TrailList
@@ -40,7 +41,13 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             TrasyTheme {
-                Main()
+                var showSplash by remember { mutableStateOf(true) }
+
+                if (showSplash) {
+                    SplashScreen(onAnimationFinished = { showSplash = false })
+                } else {
+                    Main()
+                }
             }
         }
     }
