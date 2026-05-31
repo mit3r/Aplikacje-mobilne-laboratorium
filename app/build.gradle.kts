@@ -1,16 +1,17 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
 }
 
 android {
-    namespace = "com.example.pierwszaaplikacja"
+    namespace = "com.example.trasy"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.pierwszaaplikacja"
+        applicationId = "com.example.trasy"
         minSdk = 33
         targetSdk = 35
         versionCode = 1
@@ -32,6 +33,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+        }
+    }
     buildFeatures {
         compose = true
     }
@@ -47,11 +53,11 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.navigation.runtime.ktx)
     implementation(libs.kotlinx.serialization.json)
     
-    // Splash Screen
+    // UI Libraries
     implementation(libs.androidx.core.splashscreen)
+    implementation(libs.google.material)
 
     // Room
     implementation(libs.androidx.room.runtime)
@@ -62,6 +68,7 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
     implementation(libs.okhttp.logging)
+    implementation(libs.gson)
 
     // Material Icons Extended
     implementation(libs.androidx.material.icons.extended)
